@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { Player, Match, Card, Deck, MoveHistory } from './game.interfaces';
+import { Player, Match, Card } from './game.interfaces';
 import * as crypto from 'crypto';
 
 @Injectable()
@@ -25,7 +25,21 @@ export class GameEngineService {
 
   createShuffledDeck(): Card[] {
     const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
-    const values = ['A', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K'];
+    const values = [
+      'A',
+      '2',
+      '3',
+      '4',
+      '5',
+      '6',
+      '7',
+      '8',
+      '9',
+      '10',
+      'J',
+      'Q',
+      'K',
+    ];
     const deck: Card[] = [];
     for (const suit of suits) {
       for (const value of values) {
@@ -68,7 +82,8 @@ export class GameEngineService {
   nextTurn(matchId: string) {
     const match = this.matches.get(matchId);
     if (!match || !match.isActive) return;
-    match.currentPlayerIndex = (match.currentPlayerIndex + 1) % match.players.length;
+    match.currentPlayerIndex =
+      (match.currentPlayerIndex + 1) % match.players.length;
   }
 
   verifyMoveHash(move: string, hash: string): boolean {
