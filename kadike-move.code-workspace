@@ -1,0 +1,30 @@
+{
+  "folders": [
+    { "path": "frontend" },
+    { "path": "backend" },
+    { "path": "contracts" },
+    { "path": "scripts" }
+  ],
+  "settings": {
+    "terminal.integrated.cwd": "${workspaceFolder}",
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[javascript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "[typescript]": {
+      "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "typescript.validate.enable": true,
+    "typescript.tsdk": "node_modules/typescript/lib"
+  },
+  "extensions": {
+    "recommendations": [
+      "esbenp.prettier-vscode",
+      "dbaeumer.vscode-eslint",
+      "ms-vscode.vscode-typescript-next",
+      "dsznajder.es7-react-js-snippets",
+      "nestjs.nestjs-files",
+      "pontem-network.move-vscode-extension"
+    ]
+  }
+}
