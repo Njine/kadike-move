@@ -90,13 +90,7 @@ npm run start:dev
 cd ../frontend
 npm run dev
 ```
-#### Deploy/Simulate Move Contracts
-```bash
-cd ../contracts
-# Use Move CLI to publish or test contracts
-# Example:
-move test
-```
+
 #### Utility Scripts
 Scripts for deployment, running backend/frontend, and simulating games are in the `scripts/` folder. Example:
 ```bash
