@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import type { Match, Player, Card, MoveHistory } from './types/game';
 import * as crypto from 'crypto';
+import { BlockchainService } from './blockchain/blockchain.service';
 
 @Injectable()
 export class GameEngineService {
   private matches: Map<string, Match> = new Map();
   private moveHistories: Map<string, MoveHistory[]> = new Map();
+
+  constructor(private readonly blockchainService: BlockchainService) {}
 
   /**
    * Create a new match with the specified player IDs.
@@ -140,6 +143,10 @@ export class GameEngineService {
     if (currentPlayer.hand.length === 0) {
       match.isActive = false;
       match.winnerId = playerId;
+
+      // Settle match on blockchain
+      void this.blockchainService.settleMatch(playerId, match.pool);
+
       return match;
     }
 
@@ -244,6 +251,9 @@ export class GameEngineService {
     const NIKO_KADI_STAKE = 10;
     match.pool += NIKO_KADI_STAKE;
     player.nikoKadiDeclared = true;
+
+    // Record on blockchain
+    void this.blockchainService.recordNikoKadi(playerId, NIKO_KADI_STAKE);
 
     // Record move in history
     this.recordMove(matchId, playerId, 'nikoKadi');
