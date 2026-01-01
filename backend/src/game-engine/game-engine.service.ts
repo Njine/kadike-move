@@ -14,8 +14,11 @@ export class GameEngineService {
       players,
       drawDeck: this.generateDeck(),
       discardPile: [],
+      topDiscardCard: null,
       turnIndex: 0,
       pool: players.reduce((sum, p) => sum + p.stake, 0),
+      isActive: false,
+      winnerId: undefined,
     };
     this.matches.set(match.id, match);
     this.moveHistories.set(match.id, []);

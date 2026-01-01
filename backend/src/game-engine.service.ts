@@ -1,31 +1,273 @@
 import { Injectable } from '@nestjs/common';
-import { Player, Match, Card } from './game.interfaces';
+import { Match, Player, Card, MoveHistory } from './types/game';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class GameEngineService {
   private matches: Map<string, Match> = new Map();
+  private moveHistories: Map<string, MoveHistory[]> = new Map();
 
-  createMatch(players: Player[], stakes: number): Match {
+  /**
+   * Create a new match with the specified player IDs.
+   * Players are initialized with empty hands. Deck is shuffled.
+   * Match is created but not yet active (call dealHands to start).
+   */
+  createMatch(playerIds: string[]): Match {
+    if (playerIds.length < 2 || playerIds.length > 4) {
+      throw new Error('Match requires 2-4 players');
+    }
+
     const id = crypto.randomUUID();
-    const deck = this.createShuffledDeck();
+    const deck = this.generateDeck();
+
+    const players: Player[] = playerIds.map((playerId) => ({
+      id: playerId,
+      name: `Player ${playerId}`,
+      hand: [],
+      stake: 0,
+      nikoKadiDeclared: false,
+      isConnected: true,
+    }));
+
     const match: Match = {
       id,
       players,
-      deck: { cards: deck },
+      drawDeck: deck,
       discardPile: [],
-      currentPlayerIndex: 0,
-      moveHistory: [],
-      stakes,
-      isActive: true,
+      topDiscardCard: null,
+      turnIndex: 0,
+      pool: 0,
+      isActive: false,
+      winnerId: undefined,
     };
+
     this.matches.set(id, match);
+    this.moveHistories.set(id, []);
     return match;
   }
 
-  createShuffledDeck(): Card[] {
+  /**
+   * Deal initial hands to all players (7 cards each).
+   * Flip one card to start the discard pile.
+   * Set match as active.
+   */
+  dealHands(matchId: string): Match {
+    const match = this.getMatch(matchId);
+
+    if (match.isActive) {
+      throw new Error('Match has already started');
+    }
+
+    // Deal 7 cards to each player
+    for (const player of match.players) {
+      for (let i = 0; i < 7; i++) {
+        if (match.drawDeck.length === 0) {
+          throw new Error('Not enough cards in deck to deal hands');
+        }
+        const card = match.drawDeck.pop()!;
+        player.hand.push(card);
+      }
+    }
+
+    // Flip one card to start discard pile
+    if (match.drawDeck.length === 0) {
+      throw new Error('Not enough cards to start discard pile');
+    }
+    const startCard = match.drawDeck.pop()!;
+    match.discardPile.push(startCard);
+    match.topDiscardCard = startCard;
+    match.isActive = true;
+
+    return match;
+  }
+
+  /**
+   * Play a card from player's hand to the discard pile.
+   * Validates: turn order, card ownership, card legality (suit or rank match).
+   * Checks for win condition (empty hand).
+   * Records move in history with hash.
+   */
+  playCard(matchId: string, playerId: string, card: Card): Match {
+    const match = this.getMatch(matchId);
+
+    if (!match.isActive) {
+      throw new Error('Match is not active');
+    }
+
+    if (match.winnerId) {
+      throw new Error('Match has already ended');
+    }
+
+    // Validate turn
+    const currentPlayer = match.players[match.turnIndex];
+    if (currentPlayer.id !== playerId) {
+      throw new Error(
+        `Not your turn. Current turn: ${currentPlayer.id}, attempted: ${playerId}`,
+      );
+    }
+
+    // Find card in player's hand
+    const cardIndex = currentPlayer.hand.findIndex(
+      (c) => c.suit === card.suit && c.rank === card.rank,
+    );
+    if (cardIndex === -1) {
+      throw new Error(
+        `Card ${card.rank} of ${card.suit} not found in player's hand`,
+      );
+    }
+
+    // Validate card legality (must match suit OR rank)
+    if (match.topDiscardCard) {
+      const isLegal =
+        card.suit === match.topDiscardCard.suit ||
+        card.rank === match.topDiscardCard.rank;
+      if (!isLegal) {
+        throw new Error(
+          `Illegal move: ${card.rank} of ${card.suit} does not match ${match.topDiscardCard.rank} of ${match.topDiscardCard.suit}`,
+        );
+      }
+    }
+
+    // Remove card from hand and add to discard pile
+    currentPlayer.hand.splice(cardIndex, 1);
+    match.discardPile.push(card);
+    match.topDiscardCard = card;
+
+    // Record move in history
+    this.recordMove(matchId, playerId, 'play', card);
+
+    // Check win condition
+    if (currentPlayer.hand.length === 0) {
+      match.isActive = false;
+      match.winnerId = playerId;
+      return match;
+    }
+
+    // Advance turn
+    match.turnIndex = (match.turnIndex + 1) % match.players.length;
+
+    return match;
+  }
+
+  /**
+   * Draw a card from the draw deck and add to player's hand.
+   * If draw deck is empty, reshuffle discard pile (except top card).
+   * Validates turn order.
+   */
+  drawCard(matchId: string, playerId: string): Match {
+    const match = this.getMatch(matchId);
+
+    if (!match.isActive) {
+      throw new Error('Match is not active');
+    }
+
+    if (match.winnerId) {
+      throw new Error('Match has already ended');
+    }
+
+    // Validate turn
+    const currentPlayer = match.players[match.turnIndex];
+    if (currentPlayer.id !== playerId) {
+      throw new Error(
+        `Not your turn. Current turn: ${currentPlayer.id}, attempted: ${playerId}`,
+      );
+    }
+
+    // If draw deck is empty, reshuffle discard pile
+    if (match.drawDeck.length === 0) {
+      this.reshuffleDiscard(matchId);
+    }
+
+    // Draw card
+    if (match.drawDeck.length === 0) {
+      throw new Error('No cards left to draw (deck and discard both empty)');
+    }
+
+    const card = match.drawDeck.pop()!;
+    currentPlayer.hand.push(card);
+
+    // Record move in history
+    this.recordMove(matchId, playerId, 'draw', card);
+
+    return match;
+  }
+
+  /**
+   * Reshuffle discard pile (except top card) back into draw deck.
+   * Keeps the top discard card in place.
+   */
+  reshuffleDiscard(matchId: string): Match {
+    const match = this.getMatch(matchId);
+
+    if (match.discardPile.length <= 1) {
+      // Only top card or no cards, nothing to reshuffle
+      return match;
+    }
+
+    // Keep top card, reshuffle the rest
+    const topCard = match.discardPile.pop()!;
+    const cardsToReshuffle = [...match.discardPile];
+    match.drawDeck = this.shuffle(cardsToReshuffle);
+    match.discardPile = [topCard];
+
+    return match;
+  }
+
+  /**
+   * Declare Niko Kadi (player has 1 card left).
+   * Validates player has exactly 1 card and hasn't already declared.
+   * Adds fixed micro-stake (10 tokens) to match pool.
+   */
+  declareNikoKadi(matchId: string, playerId: string): Match {
+    const match = this.getMatch(matchId);
+
+    if (!match.isActive) {
+      throw new Error('Match is not active');
+    }
+
+    const player = match.players.find((p) => p.id === playerId);
+    if (!player) {
+      throw new Error(`Player ${playerId} not found in match`);
+    }
+
+    if (player.hand.length !== 1) {
+      throw new Error(
+        `Player must have exactly 1 card to declare Niko Kadi. Current: ${player.hand.length}`,
+      );
+    }
+
+    if (player.nikoKadiDeclared) {
+      throw new Error('Player has already declared Niko Kadi');
+    }
+
+    // Add micro-stake to pool (fixed 10 tokens for MVP)
+    const NIKO_KADI_STAKE = 10;
+    match.pool += NIKO_KADI_STAKE;
+    player.nikoKadiDeclared = true;
+
+    // Record move in history
+    this.recordMove(matchId, playerId, 'nikoKadi');
+
+    return match;
+  }
+
+  /**
+   * Get match by ID, throw if not found
+   */
+  private getMatch(matchId: string): Match {
+    const match = this.matches.get(matchId);
+    if (!match) {
+      throw new Error(`Match ${matchId} not found`);
+    }
+    return match;
+  }
+
+  /**
+   * Generate a standard 52-card deck and shuffle it
+   */
+  private generateDeck(): Card[] {
     const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
-    const values = [
+    const ranks = [
       'A',
       '2',
       '3',
@@ -42,11 +284,18 @@ export class GameEngineService {
     ];
     const deck: Card[] = [];
     for (const suit of suits) {
-      for (const value of values) {
-        deck.push({ suit, value });
+      for (const rank of ranks) {
+        deck.push({ suit, rank });
       }
     }
-    // Shuffle
+    return this.shuffle(deck);
+  }
+
+  /**
+   * Fisher-Yates shuffle
+   */
+  private shuffle(cards: Card[]): Card[] {
+    const deck = [...cards];
     for (let i = deck.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
       [deck[i], deck[j]] = [deck[j], deck[i]];
@@ -54,42 +303,55 @@ export class GameEngineService {
     return deck;
   }
 
-  drawCard(matchId: string): Card | null {
-    const match = this.matches.get(matchId);
-    if (!match || !match.isActive) return null;
-    if (match.deck.cards.length === 0) {
-      this.reshuffleDiscardIntoDeck(match);
-    }
-    return match.deck.cards.pop() || null;
+  /**
+   * Record a move in the move history with hash generation.
+   * Hash input: { matchId, moveIndex, playerId, action, cardPlayed? }
+   * Timestamp is stored but NOT included in hash.
+   */
+  private recordMove(
+    matchId: string,
+    playerId: string,
+    action: 'play' | 'draw' | 'nikoKadi',
+    cardPlayed?: Card,
+  ): void {
+    const history = this.moveHistories.get(matchId) || [];
+    const moveIndex = history.length;
+    const timestamp = Date.now();
+
+    // Generate hash (no timestamp in hash input)
+    const hashInput = JSON.stringify({
+      matchId,
+      moveIndex,
+      playerId,
+      action,
+      cardPlayed,
+    });
+    const hash = crypto.createHash('sha256').update(hashInput).digest('hex');
+
+    const moveRecord: MoveHistory = {
+      moveIndex,
+      playerId,
+      action,
+      cardPlayed,
+      timestamp,
+      hash,
+    };
+
+    history.push(moveRecord);
+    this.moveHistories.set(matchId, history);
   }
 
-  reshuffleDiscardIntoDeck(match: Match) {
-    if (match.discardPile.length > 1) {
-      const topCard = match.discardPile.pop();
-      match.deck.cards = this.shuffle([...match.discardPile]);
-      match.discardPile = [topCard!];
-    }
+  /**
+   * Get move history for a match (for debugging/auditing)
+   */
+  getMoveHistory(matchId: string): MoveHistory[] {
+    return this.moveHistories.get(matchId) || [];
   }
 
-  shuffle(cards: Card[]): Card[] {
-    for (let i = cards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [cards[i], cards[j]] = [cards[j], cards[i]];
-    }
-    return cards;
+  /**
+   * Get a match by ID (for external access)
+   */
+  getMatchById(matchId: string): Match | undefined {
+    return this.matches.get(matchId);
   }
-
-  nextTurn(matchId: string) {
-    const match = this.matches.get(matchId);
-    if (!match || !match.isActive) return;
-    match.currentPlayerIndex =
-      (match.currentPlayerIndex + 1) % match.players.length;
-  }
-
-  verifyMoveHash(move: string, hash: string): boolean {
-    const calculated = crypto.createHash('sha256').update(move).digest('hex');
-    return calculated === hash;
-  }
-
-  // Add more game logic as needed (Niko Kadi micro-stakes, etc.)
 }
