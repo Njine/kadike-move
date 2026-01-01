@@ -5,8 +5,11 @@ export interface Card {
 
 export interface Player {
   id: string;
+  name: string;
   hand: Card[];
   stake: number;
+  nikoKadiDeclared: boolean;
+  isConnected: boolean;
 }
 
 export interface Match {
@@ -14,14 +17,18 @@ export interface Match {
   players: Player[];
   drawDeck: Card[];
   discardPile: Card[];
+  topDiscardCard: Card | null;
   turnIndex: number;
   pool: number;
+  isActive: boolean;
+  winnerId?: string;
 }
 
 export interface MoveHistory {
+  moveIndex: number;
   playerId: string;
+  action: 'play' | 'draw' | 'nikoKadi';
   cardPlayed?: Card;
-  drawnCard?: Card;
   timestamp: number;
   hash: string;
 }

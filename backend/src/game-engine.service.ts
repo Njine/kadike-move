@@ -1,31 +1,47 @@
 import { Injectable } from '@nestjs/common';
-import { Player, Match, Card } from './game.interfaces';
+import { Match, Player, Card, MoveHistory } from './types/game';
 import * as crypto from 'crypto';
 
 @Injectable()
 export class GameEngineService {
   private matches: Map<string, Match> = new Map();
+  private moveHistories: Map<string, MoveHistory[]> = new Map();
 
-  createMatch(players: Player[], stakes: number): Match {
+  // Create a new match
+  createMatch(playerIds: string[]): Match {
     const id = crypto.randomUUID();
-    const deck = this.createShuffledDeck();
+    const deck = this.generateDeck();
+
+    const players: Player[] = playerIds.map((playerId) => ({
+      id: playerId,
+      name: `Player ${playerId}`,
+      hand: [],
+      stake: 0,
+      nikoKadiDeclared: false,
+      isConnected: true,
+    }));
+
     const match: Match = {
       id,
       players,
-      deck: { cards: deck },
+      drawDeck: deck,
       discardPile: [],
-      currentPlayerIndex: 0,
-      moveHistory: [],
-      stakes,
-      isActive: true,
+      topDiscardCard: null,
+      turnIndex: 0,
+      pool: 0,
+      isActive: false,
+      winnerId: undefined,
     };
+
     this.matches.set(id, match);
+    this.moveHistories.set(id, []);
     return match;
   }
 
-  createShuffledDeck(): Card[] {
+  // Generate a standard deck of cards
+  private generateDeck(): Card[] {
     const suits = ['hearts', 'diamonds', 'clubs', 'spades'];
-    const values = [
+    const ranks = [
       'A',
       '2',
       '3',
@@ -42,54 +58,22 @@ export class GameEngineService {
     ];
     const deck: Card[] = [];
     for (const suit of suits) {
-      for (const value of values) {
-        deck.push({ suit, value });
+      for (const rank of ranks) {
+        deck.push({ suit, rank });
       }
     }
-    // Shuffle
-    for (let i = deck.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [deck[i], deck[j]] = [deck[j], deck[i]];
-    }
-    return deck;
+    return this.shuffle(deck);
   }
 
-  drawCard(matchId: string): Card | null {
-    const match = this.matches.get(matchId);
-    if (!match || !match.isActive) return null;
-    if (match.deck.cards.length === 0) {
-      this.reshuffleDiscardIntoDeck(match);
-    }
-    return match.deck.cards.pop() || null;
+  // Shuffle utility
+  private shuffle(deck: Card[]): Card[] {
+    return deck.sort(() => Math.random() - 0.5);
   }
 
-  reshuffleDiscardIntoDeck(match: Match) {
-    if (match.discardPile.length > 1) {
-      const topCard = match.discardPile.pop();
-      match.deck.cards = this.shuffle([...match.discardPile]);
-      match.discardPile = [topCard!];
-    }
-  }
-
-  shuffle(cards: Card[]): Card[] {
-    for (let i = cards.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [cards[i], cards[j]] = [cards[j], cards[i]];
-    }
-    return cards;
-  }
-
-  nextTurn(matchId: string) {
-    const match = this.matches.get(matchId);
-    if (!match || !match.isActive) return;
-    match.currentPlayerIndex =
-      (match.currentPlayerIndex + 1) % match.players.length;
-  }
-
-  verifyMoveHash(move: string, hash: string): boolean {
-    const calculated = crypto.createHash('sha256').update(move).digest('hex');
-    return calculated === hash;
-  }
-
-  // Add more game logic as needed (Niko Kadi micro-stakes, etc.)
+  // Additional methods to implement:
+  // - playCard(playerId, matchId, card)
+  // - drawCard(playerId, matchId)
+  // - declareNikoKadi(playerId, matchId, stake)
+  // - handleDrawDeckEmpty(matchId)
+  // - computeMoveHash(matchId)
 }
