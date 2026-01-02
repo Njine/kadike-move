@@ -1,5 +1,10 @@
-import React, { useEffect, useState } from 'react';
-import { connectSocket, getSocket, joinMatch as emitJoinMatch, disconnectSocket } from '../utils/websocket';
+import React, { useEffect, useState, useMemo } from 'react';
+import {
+  connectSocket,
+  getSocket,
+  joinMatch as emitJoinMatch,
+  disconnectSocket,
+} from '../utils/websocket';
 import type { Match, Card } from '../types/game';
 import Lobby from './Lobby';
 import MatchBoard from './MatchBoard';
@@ -10,47 +15,55 @@ interface GameRoomProps {
   serverUrl?: string;
 }
 
-const GameRoom: React.FC<GameRoomProps> = ({ 
-  serverUrl = 'http://localhost:3000' 
+const GameRoom: React.FC<GameRoomProps> = ({
+  serverUrl = 'http://localhost:3000',
 }) => {
-  // Lobby state
-  const [matchId, setMatchId] = useState<string | null>(null);
+  // Player identity
   const [playerId, setPlayerId] = useState<string | null>(null);
+  const [matchId, setMatchId] = useState<string | null>(null);
+
+  // Lobby state
   const [isWaiting, setIsWaiting] = useState(false);
-  
-  // Public match state (sanitized - no hands visible)
+
+  // Game state (from Socket.IO events)
   const [match, setMatch] = useState<Match | null>(null);
-  
-  // Private player hand
-  const [playerHand, setPlayerHand] = useState<Card[]>([]);
-  
-  // Current turn player ID
-  const [currentPlayerId, setCurrentPlayerId] = useState<string | null>(null);
-  
+  const [hand, setHand] = useState<Card[]>([]);
+  const [currentTurnPlayerId, setCurrentTurnPlayerId] = useState<string | null>(
+    null,
+  );
+
   // Game over state
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [winnerId, setWinnerId] = useState<string | null>(null);
 
+  // Computed: is it my turn?
+  const isMyTurn = useMemo(() => {
+    return playerId !== null && currentTurnPlayerId === playerId;
+  }, [playerId, currentTurnPlayerId]);
+
+  // Handler: Create match
   const handleCreateMatch = (playerIds: string[]) => {
     const socket = connectSocket(serverUrl);
-    
-    // Listen for matchCreated event
+
+    // Listen for matchCreated event (one-time)
     socket.once('matchCreated', (createdMatch: Match) => {
       setMatchId(createdMatch.id);
       setPlayerId(playerIds[0]); // First player is the creator
       setIsWaiting(true);
     });
-    
+
     // Emit createMatch event
     socket.emit('createMatch', { playerIds });
   };
 
+  // Handler: Join match
   const handleJoinMatch = (joinMatchId: string, joinPlayerId: string) => {
     setMatchId(joinMatchId);
     setPlayerId(joinPlayerId);
     setIsWaiting(true);
   };
 
+  // Effect: Subscribe to Socket.IO events when player joins a match
   useEffect(() => {
     if (!matchId || !playerId) return;
 
@@ -60,56 +73,66 @@ const GameRoom: React.FC<GameRoomProps> = ({
     // Join the match
     emitJoinMatch(matchId, playerId);
 
-    // Listen to server events
+    // Event: Public match state update
     socket.on('public', (data) => {
       if (data.type === 'matchUpdate') {
         setMatch(data.match);
         setIsWaiting(false); // Game has started
+
         // Update current turn from match state
         if (data.match.players && data.match.players.length > 0) {
           const currentPlayer = data.match.players[data.match.turnIndex];
-          setCurrentPlayerId(currentPlayer?.id || null);
+          setCurrentTurnPlayerId(currentPlayer?.id || null);
         }
       }
     });
 
+    // Event: Private hand update
     socket.on('private', (data) => {
       if (data.type === 'handUpdate') {
-        setPlayerHand(data.hand);
+        setHand(data.hand);
       }
     });
 
+    // Event: Game started
     socket.on('gameStarted', (data) => {
-      console.log('Game started!', data);
-      setCurrentPlayerId(data.currentTurn);
+      console.log('[GameRoom] Game started:', data.matchId);
+      setCurrentTurnPlayerId(data.currentTurn);
       setIsWaiting(false);
     });
 
+    // Event: Turn change
     socket.on('turnChange', (data) => {
-      console.log('Turn changed to:', data.currentTurn);
-      setCurrentPlayerId(data.currentTurn);
+      console.log('[GameRoom] Turn changed to:', data.currentTurn);
+      setCurrentTurnPlayerId(data.currentTurn);
     });
 
+    // Event: Niko Kadi declared
     socket.on('nikoKadiDeclared', (data) => {
-      console.log('Niko Kadi declared by:', data.playerId);
+      console.log('[GameRoom] Niko Kadi declared by:', data.playerId);
       // Match state will be updated via 'public' event
     });
 
+    // Event: Game over
     socket.on('gameOver', (data) => {
-      console.log('Game over! Winner:', data.winnerId);
+      console.log('[GameRoom] Game over! Winner:', data.winnerId);
       setGameOver(true);
       setWinnerId(data.winnerId);
     });
 
+    // Event: Player disconnected
     socket.on('playerDisconnected', (data) => {
-      console.log('Player disconnected:', data.playerId);
+      console.warn('[GameRoom] Player disconnected:', data.playerId);
+      // Match state will be updated via 'public' event
     });
 
+    // Event: Error
     socket.on('error', (data) => {
-      console.error('Server error:', data.message);
+      console.error('[GameRoom] Server error:', data.message);
+      alert(`Server error: ${data.message}`);
     });
 
-    // Cleanup on unmount
+    // Cleanup: Remove all event listeners on unmount
     return () => {
       const currentSocket = getSocket();
       if (currentSocket) {
@@ -127,67 +150,59 @@ const GameRoom: React.FC<GameRoomProps> = ({
   }, [matchId, playerId, serverUrl]);
 
   return (
-    <div className="game-room">
-      <h1>Kadike Move</h1>
-      
-      {!matchId && (
-        <Lobby 
-          onCreateMatch={handleCreateMatch}
-          onJoinMatch={handleJoinMatch}
-          isWaiting={false}
-        />
-      )}
-      
-      {matchId && isWaiting && (
-        <Lobby 
-          onCreateMatch={handleCreateMatch}
-          onJoinMatch={handleJoinMatch}
-          isWaiting={true}
-          matchId={matchId}
-        />
-      )}
-      
-      {match && match.isActive && (
-        <>
-          {matchId && playerId && (
-            <MatchBoard 
+    <div className="min-h-screen bg-gray-900 text-white p-4">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-4xl font-bold text-center mb-8">Kadike Move</h1>
+
+        {/* Lobby: Before joining a match */}
+        {!matchId && (
+          <Lobby
+            onCreateMatch={handleCreateMatch}
+            onJoinMatch={handleJoinMatch}
+            isWaiting={false}
+          />
+        )}
+
+        {/* Lobby: Waiting for players */}
+        {matchId && isWaiting && (
+          <Lobby
+            onCreateMatch={handleCreateMatch}
+            onJoinMatch={handleJoinMatch}
+            isWaiting={true}
+            matchId={matchId}
+          />
+        )}
+
+        {/* Game: Active match */}
+        {match && match.isActive && !gameOver && playerId && (
+          <>
+            <MatchBoard
               match={match}
-              currentPlayerId={currentPlayerId}
+              currentPlayerId={currentTurnPlayerId}
               myPlayerId={playerId}
             />
-          )}
-          
-          {playerHand.length > 0 && matchId && playerId && (
-            <Hand 
-              cards={playerHand}
-              matchId={matchId}
-              playerId={playerId}
-              isMyTurn={currentPlayerId === playerId}
-            />
-          )}
-        </>
-      )}
-      
-      {gameOver && winnerId && match && playerId && (
-        <MatchSummary 
-          winnerId={winnerId}
-          winnerName={match.players.find(p => p.id === winnerId)?.name}
-          pool={match.pool}
-          myPlayerId={playerId}
-        />
-      )}
-      
-      {matchId && playerId && (
-        <div style={{ marginTop: '20px', padding: '10px', background: '#f0f0f0' }}>
-          <h3>Debug Info</h3>
-          <p>Player ID: {playerId}</p>
-          <p>Match ID: {matchId}</p>
-          <p>Current Turn: {currentPlayerId || 'Waiting...'}</p>
-          <p>Hand Size: {playerHand.length}</p>
-          <p>Game Active: {match?.isActive ? 'Yes' : 'No'}</p>
-          <p>Game Over: {gameOver ? 'Yes' : 'No'}</p>
-        </div>
-      )}
+
+            {hand.length > 0 && matchId && (
+              <Hand
+                cards={hand}
+                matchId={matchId}
+                playerId={playerId}
+                isMyTurn={isMyTurn}
+              />
+            )}
+          </>
+        )}
+
+        {/* Game Over: Show winner */}
+        {gameOver && winnerId && match && playerId && (
+          <MatchSummary
+            winnerId={winnerId}
+            winnerName={match.players.find((p) => p.id === winnerId)?.name}
+            pool={match.pool}
+            myPlayerId={playerId}
+          />
+        )}
+      </div>
     </div>
   );
 };
