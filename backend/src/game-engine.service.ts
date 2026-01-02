@@ -1,11 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { Match, Player, Card, MoveHistory } from './types/game';
+import type { Match, Player, Card, MoveHistory } from './types/game';
 import * as crypto from 'crypto';
+import { BlockchainService } from './blockchain/blockchain.service';
 
 @Injectable()
 export class GameEngineService {
   private matches: Map<string, Match> = new Map();
   private moveHistories: Map<string, MoveHistory[]> = new Map();
+
+  constructor(private readonly blockchainService: BlockchainService) {}
 
   /**
    * Create a new match with the specified player IDs.
@@ -20,14 +23,20 @@ export class GameEngineService {
     const id = crypto.randomUUID();
     const deck = this.generateDeck();
 
+    const INITIAL_STAKE = 100; // Fixed stake per player for MVP
     const players: Player[] = playerIds.map((playerId) => ({
       id: playerId,
       name: `Player ${playerId}`,
       hand: [],
-      stake: 0,
+      stake: INITIAL_STAKE,
       nikoKadiDeclared: false,
       isConnected: true,
     }));
+
+    // Deposit stakes to blockchain escrow
+    for (const player of players) {
+      void this.blockchainService.depositStake(player.id, INITIAL_STAKE);
+    }
 
     const match: Match = {
       id,
@@ -36,7 +45,7 @@ export class GameEngineService {
       discardPile: [],
       topDiscardCard: null,
       turnIndex: 0,
-      pool: 0,
+      pool: players.length * INITIAL_STAKE, // Initialize pool with all stakes
       isActive: false,
       winnerId: undefined,
     };
@@ -140,6 +149,10 @@ export class GameEngineService {
     if (currentPlayer.hand.length === 0) {
       match.isActive = false;
       match.winnerId = playerId;
+
+      // Settle match on blockchain
+      void this.blockchainService.settleMatch(playerId, match.pool);
+
       return match;
     }
 
@@ -244,6 +257,9 @@ export class GameEngineService {
     const NIKO_KADI_STAKE = 10;
     match.pool += NIKO_KADI_STAKE;
     player.nikoKadiDeclared = true;
+
+    // Record on blockchain
+    void this.blockchainService.recordNikoKadi(playerId, NIKO_KADI_STAKE);
 
     // Record move in history
     this.recordMove(matchId, playerId, 'nikoKadi');
