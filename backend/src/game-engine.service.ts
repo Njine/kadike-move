@@ -23,14 +23,20 @@ export class GameEngineService {
     const id = crypto.randomUUID();
     const deck = this.generateDeck();
 
+    const INITIAL_STAKE = 100; // Fixed stake per player for MVP
     const players: Player[] = playerIds.map((playerId) => ({
       id: playerId,
       name: `Player ${playerId}`,
       hand: [],
-      stake: 0,
+      stake: INITIAL_STAKE,
       nikoKadiDeclared: false,
       isConnected: true,
     }));
+
+    // Deposit stakes to blockchain escrow
+    for (const player of players) {
+      void this.blockchainService.depositStake(player.id, INITIAL_STAKE);
+    }
 
     const match: Match = {
       id,
@@ -39,7 +45,7 @@ export class GameEngineService {
       discardPile: [],
       topDiscardCard: null,
       turnIndex: 0,
-      pool: 0,
+      pool: players.length * INITIAL_STAKE, // Initialize pool with all stakes
       isActive: false,
       winnerId: undefined,
     };
