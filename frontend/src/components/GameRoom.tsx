@@ -47,6 +47,9 @@ const GameRoom: React.FC<GameRoomProps> = ({
 
     // Listen for matchCreated event (one-time)
     socket.once('matchCreated', (createdMatch: Match) => {
+      console.log('[GameRoom] Match created:', createdMatch.id);
+      console.log('[GameRoom] Creator player ID:', playerIds[0]);
+      // Set state which will trigger useEffect to join
       setMatchId(createdMatch.id);
       setPlayerId(playerIds[0]); // First player is the creator
       setIsWaiting(true);
@@ -77,7 +80,10 @@ const GameRoom: React.FC<GameRoomProps> = ({
     socket.on('public', (data) => {
       if (data.type === 'matchUpdate') {
         setMatch(data.match);
-        setIsWaiting(false); // Game has started
+        // Only stop waiting if the game has actually started
+        if (data.match.isActive) {
+          setIsWaiting(false);
+        }
 
         // Update current turn from match state
         if (data.match.players && data.match.players.length > 0) {
@@ -153,6 +159,17 @@ const GameRoom: React.FC<GameRoomProps> = ({
     <div className="min-h-screen bg-gray-900 text-white p-4">
       <div className="max-w-4xl mx-auto">
         <h1 className="text-4xl font-bold text-center mb-8">Kadike Move</h1>
+
+        {/* Debug info */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mb-4 p-2 bg-gray-800 rounded text-xs">
+            <p>MatchId: {matchId || 'none'}</p>
+            <p>PlayerId: {playerId || 'none'}</p>
+            <p>IsWaiting: {isWaiting ? 'yes' : 'no'}</p>
+            <p>Match Active: {match?.isActive ? 'yes' : 'no'}</p>
+            <p>Game Over: {gameOver ? 'yes' : 'no'}</p>
+          </div>
+        )}
 
         {/* Lobby: Before joining a match */}
         {!matchId && (

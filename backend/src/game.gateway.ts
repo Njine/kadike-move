@@ -64,13 +64,32 @@ export class GameGateway {
         return;
       }
 
-      // Validate player is in match
-      const player = match.players.find((p) => p.id === playerId);
+      // Check if player is already in match
+      let player = match.players.find((p) => p.id === playerId);
+
       if (!player) {
-        client.emit('error', {
-          message: `Player ${playerId} not in match ${matchId}`,
-        });
-        return;
+        // Player not in match - check if they can claim a placeholder slot
+        const placeholderPlayer = match.players.find(
+          (p) =>
+            p.id.startsWith('Player') &&
+            !this.matchPlayers.get(matchId)?.has(p.id),
+        );
+
+        if (!placeholderPlayer) {
+          client.emit('error', {
+            message: `Match ${matchId} is full or player ${playerId} not in match`,
+          });
+          return;
+        }
+
+        // Replace placeholder player ID with the actual player ID
+        placeholderPlayer.id = playerId;
+        placeholderPlayer.name = playerId;
+        player = placeholderPlayer;
+
+        console.log(
+          `[Gateway] Player ${playerId} claimed placeholder slot in match ${matchId}`,
+        );
       }
 
       // Store client-player mapping

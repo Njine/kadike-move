@@ -199,8 +199,16 @@ export class GameEngineService {
     const card = match.drawDeck.pop()!;
     currentPlayer.hand.push(card);
 
+    // If player had declared Niko Kadi and now has more than 1 card, reset the declaration
+    if (currentPlayer.nikoKadiDeclared && currentPlayer.hand.length > 1) {
+      currentPlayer.nikoKadiDeclared = false;
+    }
+
     // Record move in history
     this.recordMove(matchId, playerId, 'draw', card);
+
+    // Advance turn - player's turn ends after drawing
+    match.turnIndex = (match.turnIndex + 1) % match.players.length;
 
     return match;
   }
