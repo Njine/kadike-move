@@ -9,6 +9,7 @@ import { BlockchainService } from './blockchain/blockchain.service';
  */
 const MATCH_ENTRY_STAKE = 100; // KADI tokens per player
 const NIKO_KADI_PENALTY = 10; // KADI tokens (from player wallet, not stake)
+const PLATFORM_FEE_BPS = 350; // 3.5% in basis points (covers gas sponsorship, infrastructure, and sustainability)
 
 @Injectable()
 export class GameEngineService {
@@ -157,8 +158,17 @@ export class GameEngineService {
       match.isActive = false;
       match.winnerId = playerId;
 
-      // Settle match on blockchain
-      void this.blockchainService.settleMatch(playerId, match.pool);
+      // Calculate platform fee and winner payout
+      const finalPool = match.pool;
+      const platformFee = Math.floor((finalPool * PLATFORM_FEE_BPS) / 10_000);
+      const winnerPayout = finalPool - platformFee;
+
+      console.log(
+        `[Settlement] Match ${matchId} - Winner: ${playerId}, Pool: ${finalPool} KADI, Platform Fee: ${platformFee} KADI (${PLATFORM_FEE_BPS / 100}%), Winner Payout: ${winnerPayout} KADI`,
+      );
+
+      // Settle match on blockchain (platform sponsors gas)
+      void this.blockchainService.settleMatch(playerId, winnerPayout);
 
       return match;
     }
