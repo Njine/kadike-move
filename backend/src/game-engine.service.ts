@@ -3,6 +3,13 @@ import type { Match, Player, Card, MoveHistory } from './types/game';
 import * as crypto from 'crypto';
 import { BlockchainService } from './blockchain/blockchain.service';
 
+/**
+ * Economic constants
+ * Fixed for MVP; can be made configurable in future versions
+ */
+const MATCH_ENTRY_STAKE = 100; // KADI tokens per player
+const NIKO_KADI_PENALTY = 10; // KADI tokens (from player wallet, not stake)
+
 @Injectable()
 export class GameEngineService {
   private matches: Map<string, Match> = new Map();
@@ -23,19 +30,19 @@ export class GameEngineService {
     const id = crypto.randomUUID();
     const deck = this.generateDeck();
 
-    const INITIAL_STAKE = 100; // Fixed stake per player for MVP
     const players: Player[] = playerIds.map((playerId) => ({
       id: playerId,
       name: `Player ${playerId}`,
       hand: [],
-      stake: INITIAL_STAKE,
+      stake: MATCH_ENTRY_STAKE, // Entry stake (locked, never modified)
+      walletBalance: 1000, // Mock wallet balance for MVP (TODO: fetch from blockchain/user service)
       nikoKadiDeclared: false,
       isConnected: true,
     }));
 
     // Deposit stakes to blockchain escrow
     for (const player of players) {
-      void this.blockchainService.depositStake(player.id, INITIAL_STAKE);
+      void this.blockchainService.depositStake(player.id, MATCH_ENTRY_STAKE);
     }
 
     const match: Match = {
@@ -45,7 +52,7 @@ export class GameEngineService {
       discardPile: [],
       topDiscardCard: null,
       turnIndex: 0,
-      pool: players.length * INITIAL_STAKE, // Initialize pool with all stakes
+      pool: players.length * MATCH_ENTRY_STAKE, // Base pool from entry stakes
       isActive: false,
       winnerId: undefined,
     };
@@ -235,9 +242,20 @@ export class GameEngineService {
   }
 
   /**
-   * Declare Niko Kadi (player has 1 card left).
-   * Validates player has exactly 1 card and hasn't already declared.
-   * Adds fixed micro-stake (10 tokens) to match pool.
+   * Declare Niko Kadi (optional declaration when player has exactly 1 card).
+   *
+   * Requirements:
+   * - Player must have exactly 1 card
+   * - Player has not already declared Niko Kadi
+   * - Player has sufficient wallet balance (≥ NIKO_KADI_PENALTY)
+   * - x402 authorization successful (mocked for MVP)
+   *
+   * Effects:
+   * - Deducts NIKO_KADI_PENALTY from player.walletBalance
+   * - Adds NIKO_KADI_PENALTY to match.pool
+   * - Sets player.nikoKadiDeclared = true
+   * - Does NOT modify entry stake
+   * - Platform sponsors gas (no gas charged to player)
    */
   declareNikoKadi(matchId: string, playerId: string): Match {
     const match = this.getMatch(matchId);
@@ -251,23 +269,47 @@ export class GameEngineService {
       throw new Error(`Player ${playerId} not found in match`);
     }
 
+    // Validation: Exactly 1 card required
     if (player.hand.length !== 1) {
       throw new Error(
-        `Player must have exactly 1 card to declare Niko Kadi. Current: ${player.hand.length}`,
+        `Niko Kadi requires exactly 1 card. Current hand: ${player.hand.length}`,
       );
     }
 
+    // Validation: Cannot declare twice
     if (player.nikoKadiDeclared) {
-      throw new Error('Player has already declared Niko Kadi');
+      throw new Error('Niko Kadi already declared');
     }
 
-    // Add micro-stake to pool (fixed 10 tokens for MVP)
-    const NIKO_KADI_STAKE = 10;
-    match.pool += NIKO_KADI_STAKE;
+    // Validation: Sufficient wallet balance
+    if (player.walletBalance < NIKO_KADI_PENALTY) {
+      throw new Error(
+        `Insufficient wallet balance. Required: ${NIKO_KADI_PENALTY} KADI, Available: ${player.walletBalance} KADI`,
+      );
+    }
+
+    // TODO: x402 authorization check (mocked as success for MVP)
+    // const x402Authorized = await this.x402Service.authorize(playerId, 'NIKO_KADI');
+    // if (!x402Authorized) {
+    //   throw new Error('x402 authorization failed');
+    // }
+    const x402Authorized = true; // Mock: always authorized for MVP
+
+    if (!x402Authorized) {
+      throw new Error('Niko Kadi declaration not authorized');
+    }
+
+    // Execute: Deduct from wallet
+    player.walletBalance -= NIKO_KADI_PENALTY;
+
+    // Execute: Add to pool
+    match.pool += NIKO_KADI_PENALTY;
+
+    // Execute: Mark as declared
     player.nikoKadiDeclared = true;
 
-    // Record on blockchain
-    void this.blockchainService.recordNikoKadi(playerId, NIKO_KADI_STAKE);
+    // Record on blockchain (platform sponsors gas)
+    void this.blockchainService.recordNikoKadi(playerId, NIKO_KADI_PENALTY);
 
     // Record move in history
     this.recordMove(matchId, playerId, 'nikoKadi');
