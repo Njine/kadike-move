@@ -8,9 +8,10 @@ interface HandProps {
   matchId: string;
   playerId: string;
   isMyTurn: boolean;
+  walletBalance: number;
 }
 
-const Hand: React.FC<HandProps> = ({ cards, matchId, playerId, isMyTurn }) => {
+const Hand: React.FC<HandProps> = ({ cards, matchId, playerId, isMyTurn, walletBalance }) => {
   const handleCardClick = (card: CardType) => {
     if (!isMyTurn) {
       alert('Not your turn!');
@@ -50,36 +51,56 @@ const Hand: React.FC<HandProps> = ({ cards, matchId, playerId, isMyTurn }) => {
         )}
       </div>
 
-      <div style={{ display: 'flex', gap: '8px' }}>
-        <button
-          onClick={handleDrawCard}
-          disabled={!isMyTurn}
-          style={{
-            padding: '8px 16px',
-            background: isMyTurn ? '#10b981' : '#6b7280',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: isMyTurn ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Draw Card
-        </button>
+      <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <button
+            onClick={handleDrawCard}
+            disabled={!isMyTurn}
+            style={{
+              padding: '8px 16px',
+              background: isMyTurn ? '#10b981' : '#6b7280',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: isMyTurn ? 'pointer' : 'not-allowed',
+            }}
+          >
+            Draw Card
+          </button>
 
-        <button
-          onClick={handleDeclareNikoKadi}
-          disabled={cards.length !== 1}
-          style={{
-            padding: '8px 16px',
-            background: cards.length === 1 ? '#f59e0b' : '#6b7280',
-            color: '#fff',
-            border: 'none',
-            borderRadius: '4px',
-            cursor: cards.length === 1 ? 'pointer' : 'not-allowed',
-          }}
-        >
-          Declare Niko Kadi {cards.length === 1 ? '✓' : `(Need 1 card, have ${cards.length})`}
-        </button>
+          <button
+            onClick={handleDeclareNikoKadi}
+            disabled={cards.length !== 1 || walletBalance < 10}
+            style={{
+              padding: '8px 16px',
+              background: cards.length === 1 && walletBalance >= 10 ? '#f59e0b' : '#6b7280',
+              color: '#fff',
+              border: 'none',
+              borderRadius: '4px',
+              cursor: cards.length === 1 && walletBalance >= 10 ? 'pointer' : 'not-allowed',
+            }}
+            title={cards.length !== 1 ? `Need exactly 1 card (you have ${cards.length})` : walletBalance < 10 ? 'Insufficient wallet balance (need 10 KADI)' : 'Optional: Costs 10 KADI from wallet'}
+          >
+            Declare Niko Kadi (Optional - 10 KADI)
+          </button>
+        </div>
+        
+        {/* Helper text for Niko Kadi button */}
+        {cards.length !== 1 && (
+          <p style={{ fontSize: '12px', color: '#fca5a5', margin: 0 }}>
+            ⚠️ Niko Kadi requires exactly 1 card (you have {cards.length})
+          </p>
+        )}
+        {cards.length === 1 && walletBalance < 10 && (
+          <p style={{ fontSize: '12px', color: '#fca5a5', margin: 0 }}>
+            ⚠️ Insufficient wallet balance (need 10 KADI, have {walletBalance} KADI)
+          </p>
+        )}
+        {cards.length === 1 && walletBalance >= 10 && (
+          <p style={{ fontSize: '12px', color: '#86efac', margin: 0 }}>
+            ✓ Ready to declare • Optional confidence declaration • Costs 10 KADI
+          </p>
+        )}
       </div>
     </div>
   );

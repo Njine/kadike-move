@@ -171,6 +171,9 @@ const GameRoom: React.FC<GameRoomProps> = ({
               <div className="text-3xl font-bold text-white">
                 {currentPlayer.walletBalance}
               </div>
+              <div className="text-xs text-green-200 mt-2 italic">
+                💡 Gas fees are fully sponsored by the platform
+              </div>
             </div>
           ) : null;
         })()}
@@ -220,6 +223,7 @@ const GameRoom: React.FC<GameRoomProps> = ({
                 matchId={matchId}
                 playerId={playerId}
                 isMyTurn={isMyTurn}
+                walletBalance={match.players.find(p => p.id === playerId)?.walletBalance ?? 0}
               />
             )}
           </>
