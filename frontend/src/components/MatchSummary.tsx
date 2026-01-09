@@ -54,7 +54,7 @@ const MatchSummary: React.FC<MatchSummaryProps> = ({ winnerId, winnerName, pool,
         </div>
         
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span>Platform Fee (3.5%):</span>
+          <span>Platform Fee (3.5%, rounded down):</span>
           <span style={{ fontWeight: 'bold', color: '#ef4444' }}>-{platformFee} KADI</span>
         </div>
         
