@@ -9,6 +9,7 @@ export interface Player {
   name: string;
   hand: Card[];
   stake: number;
+  walletBalance: number; // KADI wallet balance for optional actions
   nikoKadiDeclared: boolean;
   isConnected: boolean;
 }

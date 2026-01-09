@@ -16,7 +16,13 @@ const MatchBoard: React.FC<MatchBoardProps> = ({ match, currentPlayerId, myPlaye
       {/* Pool */}
       <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '4px' }}>
         <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>Pool</h3>
-        <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#fbbf24' }}>{match.pool} tokens</p>
+        <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#fbbf24' }}>{match.pool} KADI</p>
+        <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
+          Entry Stake: 100 KADI per player (locked at match start)
+        </p>
+        <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontStyle: 'italic' }}>
+          💡 Platform fee (3.5%) applied only at settlement
+        </p>
       </div>
 
       {/* Top Discard Card */}
@@ -71,6 +77,12 @@ const MatchBoard: React.FC<MatchBoardProps> = ({ match, currentPlayerId, myPlaye
                     <span>
                       {player.hand?.length || 0} card{player.hand?.length !== 1 ? 's' : ''}
                     </span>
+                    
+                    {isMe && (
+                      <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '600' }}>
+                        💰 {player.walletBalance} KADI
+                      </span>
+                    )}
                     
                     {player.nikoKadiDeclared && (
                       <span
