@@ -72,6 +72,12 @@ const MatchBoard: React.FC<MatchBoardProps> = ({ match, currentPlayerId, myPlaye
                       {player.hand?.length || 0} card{player.hand?.length !== 1 ? 's' : ''}
                     </span>
                     
+                    {isMe && (
+                      <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '600' }}>
+                        💰 {player.walletBalance} KADI
+                      </span>
+                    )}
+                    
                     {player.nikoKadiDeclared && (
                       <span
                         style={{
