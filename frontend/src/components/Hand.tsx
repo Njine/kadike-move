@@ -33,74 +33,92 @@ const Hand: React.FC<HandProps> = ({ cards, matchId, playerId, isMyTurn, walletB
   };
 
   return (
-    <div style={{ padding: '16px', background: '#1e40af', borderRadius: '8px', marginTop: '20px' }}>
-      <h2 style={{ fontSize: '18px', fontWeight: '600', marginBottom: '8px' }}>Your Hand</h2>
-      
-      <div style={{ marginBottom: '16px' }}>
-        {cards.length === 0 ? (
-          <p>No cards in hand</p>
-        ) : (
-          cards.map((card, index) => (
-            <Card
-              key={`${card.suit}-${card.rank}-${index}`}
-              card={card}
-              onClick={() => handleCardClick(card)}
-              disabled={!isMyTurn}
-            />
-          ))
-        )}
+    <div className="w-full max-w-4xl mx-auto mt-8">
+      {/* Wallet Balance */}
+      <div className="bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg mb-4 flex justify-between items-center">
+        <span className="font-semibold">Your Wallet</span>
+        <span className="text-xl font-bold">{walletBalance} KADI</span>
       </div>
 
-      <div style={{ display: 'flex', gap: '8px', flexDirection: 'column' }}>
-        <div style={{ display: 'flex', gap: '8px' }}>
+      {/* Hand Cards */}
+      <div className="bg-gray-800/50 backdrop-blur p-6 rounded-xl shadow-xl border border-gray-700">
+        <h2 className="text-xl font-bold mb-4 text-center">Your Hand ({cards.length} cards)</h2>
+        
+        <div className="flex flex-wrap gap-3 justify-center mb-6 min-h-[180px]">
+          {cards.length === 0 ? (
+            <p className="text-gray-400 self-center">No cards in hand</p>
+          ) : (
+            cards.map((card, index) => (
+              <div
+                key={`${card.suit}-${card.rank}-${index}`}
+                className="transform hover:scale-110 hover:-translate-y-2 transition-all cursor-pointer"
+              >
+                <Card
+                  card={card}
+                  onClick={() => handleCardClick(card)}
+                  disabled={!isMyTurn}
+                />
+              </div>
+            ))
+          )}
+        </div>
+
+        {/* Action Buttons */}
+        <div className="flex gap-4 justify-center">
           <button
             onClick={handleDrawCard}
             disabled={!isMyTurn}
-            style={{
-              padding: '8px 16px',
-              background: isMyTurn ? '#10b981' : '#6b7280',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: isMyTurn ? 'pointer' : 'not-allowed',
-            }}
+            className={`
+              px-6 py-3 rounded-lg font-bold transition-all transform
+              ${isMyTurn 
+                ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105 text-white shadow-lg' 
+                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              }
+            `}
           >
-            Draw Card
+            🎴 Draw Card
           </button>
 
           <button
             onClick={handleDeclareNikoKadi}
             disabled={cards.length !== 1 || walletBalance < 10}
-            style={{
-              padding: '8px 16px',
-              background: cards.length === 1 && walletBalance >= 10 ? '#f59e0b' : '#6b7280',
-              color: '#fff',
-              border: 'none',
-              borderRadius: '4px',
-              cursor: cards.length === 1 && walletBalance >= 10 ? 'pointer' : 'not-allowed',
-            }}
-            title={cards.length !== 1 ? `Need exactly 1 card (you have ${cards.length})` : walletBalance < 10 ? 'Insufficient wallet balance (need 10 KADI)' : 'Optional: Costs 10 KADI from wallet'}
+            className={`
+              px-6 py-3 rounded-lg font-bold transition-all transform
+              ${cards.length === 1 && walletBalance >= 10
+                ? 'bg-amber-600 hover:bg-amber-700 hover:scale-105 text-white shadow-lg' 
+                : 'bg-gray-600 text-gray-400 cursor-not-allowed'
+              }
+            `}
+            title={
+              cards.length !== 1 
+                ? `Need exactly 1 card (you have ${cards.length})` 
+                : walletBalance < 10 
+                ? 'Insufficient wallet balance (need 10 KADI)' 
+                : 'Optional: Costs 10 KADI from wallet'
+            }
           >
-            Declare Niko Kadi (Optional - 10 KADI)
+            ⚡ Niko Kadi (10 KADI)
           </button>
         </div>
-        
-        {/* Helper text for Niko Kadi button */}
-        {cards.length !== 1 && (
-          <p style={{ fontSize: '12px', color: '#fca5a5', margin: 0 }}>
-            ⚠️ Niko Kadi requires exactly 1 card (you have {cards.length})
-          </p>
-        )}
-        {cards.length === 1 && walletBalance < 10 && (
-          <p style={{ fontSize: '12px', color: '#fca5a5', margin: 0 }}>
-            ⚠️ Insufficient wallet balance (need 10 KADI, have {walletBalance} KADI)
-          </p>
-        )}
-        {cards.length === 1 && walletBalance >= 10 && (
-          <p style={{ fontSize: '12px', color: '#86efac', margin: 0 }}>
-            ✓ Ready to declare • Optional confidence declaration • Costs 10 KADI
-          </p>
-        )}
+
+        {/* Helper Messages */}
+        <div className="mt-4 text-center text-sm">
+          {cards.length !== 1 && cards.length > 0 && (
+            <p className="text-red-400">
+              Niko Kadi requires exactly 1 card (you have {cards.length})
+            </p>
+          )}
+          {cards.length === 1 && walletBalance < 10 && (
+            <p className="text-red-400">
+              Insufficient balance (need 10 KADI, have {walletBalance} KADI)
+            </p>
+          )}
+          {cards.length === 1 && walletBalance >= 10 && (
+            <p className="text-green-400">
+              ✓ Ready to declare Niko Kadi • Optional confidence move
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

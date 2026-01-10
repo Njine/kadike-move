@@ -17,83 +17,65 @@ const MatchSummary: React.FC<MatchSummaryProps> = ({ winnerId, winnerName, pool,
   const winnerPayout = finalPool - platformFee;
   
   return (
-    <div style={{ 
-      padding: '24px', 
-      background: isWinner ? '#065f46' : '#1f2937', 
-      borderRadius: '8px', 
-      marginTop: '20px',
-      textAlign: 'center'
-    }}>
-      <h2 style={{ fontSize: '24px', fontWeight: 'bold', marginBottom: '16px' }}>
-        {isWinner ? '🎉 You Win! 🎉' : 'Game Over'}
-      </h2>
-      
-      <div style={{ marginBottom: '16px' }}>
-        <p style={{ fontSize: '18px', marginBottom: '8px' }}>
-          Winner: <span style={{ fontWeight: 'bold', color: '#fbbf24' }}>
-            {isWinner ? 'You' : (winnerName || winnerId)}
-          </span>
-        </p>
-      </div>
+    <div className="w-full max-w-2xl mx-auto mt-8">
+      <div className={`
+        p-8 rounded-2xl shadow-2xl text-center border-4
+        ${isWinner 
+          ? 'bg-gradient-to-br from-green-600 to-green-800 border-yellow-400' 
+          : 'bg-gradient-to-br from-gray-700 to-gray-800 border-gray-600'
+        }
+      `}>
+        <h2 className="text-4xl font-bold mb-6 animate-bounce">
+          {isWinner ? '🎉 Victory! 🎉' : '🎮 Game Over'}
+        </h2>
+        
+        <div className="mb-8">
+          <p className="text-xl mb-2">Winner</p>
+          <p className="text-3xl font-bold text-yellow-400">
+            {isWinner ? 'You!' : (winnerName || winnerId)}
+          </p>
+        </div>
 
-      {/* Settlement Breakdown */}
-      <div style={{ 
-        marginBottom: '20px', 
-        padding: '16px', 
-        background: '#374151', 
-        borderRadius: '8px',
-        textAlign: 'left'
-      }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '12px', textAlign: 'center' }}>
-          Settlement Breakdown
-        </h3>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span>Final Pool:</span>
-          <span style={{ fontWeight: 'bold', color: '#fbbf24' }}>{finalPool} KADI</span>
+        {/* Settlement Breakdown */}
+        <div className="bg-gray-900/50 backdrop-blur p-6 rounded-xl mb-6 text-left border border-gray-600">
+          <h3 className="text-lg font-bold mb-4 text-center text-gray-100">
+            Settlement Breakdown
+          </h3>
+          
+          <div className="space-y-3">
+            <div className="flex justify-between items-center text-lg">
+              <span className="text-gray-300">Final Pool:</span>
+              <span className="font-bold text-yellow-400">{finalPool} KADI</span>
+            </div>
+            
+            <div className="flex justify-between items-center text-lg">
+              <span className="text-gray-300">Platform Fee (3.5%):</span>
+              <span className="font-bold text-red-400">-{platformFee} KADI</span>
+            </div>
+            
+            <div className="border-t border-gray-600 my-3"></div>
+            
+            <div className="flex justify-between items-center text-xl">
+              <span className="font-bold text-gray-100">Winner Receives:</span>
+              <span className="text-2xl font-bold text-green-400">{winnerPayout} KADI</span>
+            </div>
+          </div>
+          
+          <p className="text-xs text-gray-400 mt-4 italic text-center">
+            Platform fee covers gas sponsorship and infrastructure
+          </p>
         </div>
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span>Platform Fee (3.5%, rounded down):</span>
-          <span style={{ fontWeight: 'bold', color: '#ef4444' }}>-{platformFee} KADI</span>
-        </div>
-        
-        <div style={{ 
-          height: '1px', 
-          background: '#6b7280', 
-          margin: '12px 0' 
-        }} />
-        
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-          <span style={{ fontWeight: 'bold' }}>Winner Payout:</span>
-          <span style={{ fontSize: '20px', fontWeight: 'bold', color: '#10b981' }}>{winnerPayout} KADI</span>
-        </div>
-        
-        <p style={{ 
-          fontSize: '11px', 
-          color: '#9ca3af', 
-          marginTop: '12px',
-          fontStyle: 'italic' 
-        }}>
-          Platform fee covers gas sponsorship and infrastructure
-        </p>
-      </div>
 
-      <button
-        onClick={() => window.location.reload()}
-        style={{
-          padding: '12px 24px',
-          background: '#3b82f6',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '4px',
-          fontSize: '16px',
-          fontWeight: '600',
-          cursor: 'pointer',
-        }}
-      >
-        Play Again
-      </button>
+        <button
+          onClick={() => window.location.reload()}
+          className="
+            px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold 
+            rounded-lg text-lg transition-all transform hover:scale-105 shadow-lg
+          "
+        >
+          🎴 Play Again
+        </button>
+      </div>
     </div>
   );
 };

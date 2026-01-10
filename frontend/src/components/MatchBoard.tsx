@@ -10,106 +10,79 @@ interface MatchBoardProps {
 
 const MatchBoard: React.FC<MatchBoardProps> = ({ match, currentPlayerId, myPlayerId }) => {
   return (
-    <div style={{ padding: '16px', background: '#1f2937', borderRadius: '8px', marginTop: '20px' }}>
-      <h2 style={{ fontSize: '20px', fontWeight: '600', marginBottom: '16px' }}>Match Board</h2>
-      
-      {/* Pool */}
-      <div style={{ marginBottom: '16px', padding: '12px', background: '#374151', borderRadius: '4px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>Pool</h3>
-        <p style={{ fontSize: '24px', fontWeight: 'bold', color: '#fbbf24' }}>{match.pool} KADI</p>
-        <p style={{ fontSize: '12px', color: '#9ca3af', marginTop: '8px' }}>
-          Entry Stake: 100 KADI per player (locked at match start)
-        </p>
-        <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '4px', fontStyle: 'italic' }}>
-          💡 Platform fee (3.5%) applied only at settlement
+    <div className="w-full max-w-4xl mx-auto">
+      {/* Pool Display */}
+      <div className="bg-gradient-to-r from-amber-500 to-yellow-600 p-6 rounded-xl shadow-lg mb-6 text-center">
+        <h3 className="text-sm font-medium text-gray-900 mb-2">Prize Pool</h3>
+        <p className="text-4xl font-bold text-gray-900">{match.pool} KADI</p>
+        <p className="text-xs text-gray-800 mt-2">
+          Entry: 100 KADI per player • Platform fee: 3.5% at settlement
         </p>
       </div>
 
-      {/* Top Discard Card */}
-      <div style={{ marginBottom: '16px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>Top Card</h3>
-        {match.topDiscardCard ? (
-          <Card card={match.topDiscardCard} disabled />
-        ) : (
-          <p style={{ color: '#9ca3af' }}>No cards played yet</p>
-        )}
-      </div>
+      {/* Playing Area */}
+      <div className="bg-gradient-to-br from-green-800 to-green-900 rounded-3xl p-8 shadow-2xl border-8 border-green-950 relative">
+        {/* Center Card Display */}
+        <div className="flex flex-col items-center justify-center min-h-[300px]">
+          <h3 className="text-lg font-semibold mb-4 text-green-100">Current Card</h3>
+          {match.topDiscardCard ? (
+            <div className="transform hover:scale-105 transition-transform">
+              <Card card={match.topDiscardCard} disabled />
+            </div>
+          ) : (
+            <div className="w-32 h-48 bg-green-950/50 rounded-lg border-2 border-dashed border-green-600 flex items-center justify-center">
+              <p className="text-green-400 text-sm">No cards played</p>
+            </div>
+          )}
+          
+          {/* Deck Info */}
+          <div className="mt-6 flex gap-6 text-green-200 text-sm">
+            <span>🎴 Draw: {match.drawDeck.length}</span>
+            <span>🗂️ Discard: {match.discardPile.length}</span>
+          </div>
+        </div>
 
-      {/* Current Turn Indicator */}
-      <div style={{ marginBottom: '16px', padding: '12px', background: '#065f46', borderRadius: '4px' }}>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '4px' }}>Current Turn</h3>
-        <p style={{ fontSize: '18px' }}>
-          {currentPlayerId === myPlayerId ? 'YOUR TURN' : currentPlayerId || 'Waiting...'}
-        </p>
-      </div>
-
-      {/* Players List */}
-      <div>
-        <h3 style={{ fontSize: '16px', fontWeight: '600', marginBottom: '8px' }}>Players</h3>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-          {match.players.map((player) => {
+        {/* Players Around the Table */}
+        <div className="absolute top-4 left-4 right-4 flex justify-between items-start">
+          {match.players.map((player, index) => {
             const isCurrentTurn = player.id === currentPlayerId;
             const isMe = player.id === myPlayerId;
             
             return (
               <div
                 key={player.id}
-                style={{
-                  padding: '12px',
-                  background: isCurrentTurn ? '#1e40af' : '#374151',
-                  borderRadius: '4px',
-                  border: isMe ? '2px solid #fbbf24' : 'none',
-                }}
+                className={`
+                  px-4 py-2 rounded-lg shadow-lg transition-all
+                  ${isCurrentTurn ? 'bg-blue-600 ring-4 ring-blue-400 ring-opacity-50 animate-pulse' : 'bg-gray-800/90'}
+                  ${isMe ? 'border-2 border-yellow-400' : ''}
+                `}
               >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div>
-                    <span style={{ fontWeight: '600' }}>
-                      {player.name || player.id}
-                      {isMe && ' (You)'}
-                      {isCurrentTurn && ' ⭐'}
-                    </span>
-                    {!player.isConnected && (
-                      <span style={{ marginLeft: '8px', color: '#ef4444' }}>(Disconnected)</span>
-                    )}
-                  </div>
-                  
-                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-                    <span>
-                      {player.hand?.length || 0} card{player.hand?.length !== 1 ? 's' : ''}
-                    </span>
-                    
-                    {isMe && (
-                      <span style={{ fontSize: '12px', color: '#10b981', fontWeight: '600' }}>
-                        💰 {player.walletBalance} KADI
-                      </span>
-                    )}
-                    
-                    {player.nikoKadiDeclared && (
-                      <span
-                        style={{
-                          padding: '4px 8px',
-                          background: '#f59e0b',
-                          borderRadius: '4px',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                        }}
-                      >
-                        NIKO KADI!
-                      </span>
-                    )}
-                  </div>
+                <div className="text-sm font-semibold">
+                  {player.name || player.id}
+                  {isMe && ' (You)'}
                 </div>
+                <div className="text-xs text-gray-300 mt-1">
+                  {player.hand?.length || 0} card{player.hand?.length !== 1 ? 's' : ''}
+                </div>
+                {player.nikoKadiDeclared && (
+                  <div className="text-xs bg-amber-500 text-gray-900 px-2 py-1 rounded mt-1 font-bold">
+                    NIKO KADI!
+                  </div>
+                )}
               </div>
             );
           })}
         </div>
       </div>
 
-      {/* Deck Info */}
-      <div style={{ marginTop: '16px', padding: '12px', background: '#374151', borderRadius: '4px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-          <span>Draw Deck: {match.drawDeck.length} cards</span>
-          <span>Discard Pile: {match.discardPile.length} cards</span>
+      {/* Current Turn Indicator */}
+      <div className="mt-6 text-center">
+        <div className={`inline-block px-6 py-3 rounded-full font-bold text-lg ${
+          currentPlayerId === myPlayerId 
+            ? 'bg-green-600 text-white animate-pulse' 
+            : 'bg-gray-700 text-gray-300'
+        }`}>
+          {currentPlayerId === myPlayerId ? '🎯 YOUR TURN' : `⏳ ${currentPlayerId || 'Waiting...'}'s turn`}
         </div>
       </div>
     </div>
