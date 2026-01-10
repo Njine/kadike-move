@@ -16,7 +16,7 @@ interface GameRoomProps {
 }
 
 const GameRoom: React.FC<GameRoomProps> = ({
-  serverUrl = 'http://localhost:3001',
+  serverUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:3000',
 }) => {
   // Player identity
   const [playerId, setPlayerId] = useState<string | null>(null);
