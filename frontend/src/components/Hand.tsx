@@ -33,18 +33,18 @@ const Hand: React.FC<HandProps> = ({ cards, matchId, playerId, isMyTurn, walletB
   };
 
   return (
-    <div className="w-full px-4 mt-8">
+    <div className="w-full px-4 mt-4">
       {/* Wallet Balance */}
-      <div className="bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg mb-4 flex justify-between items-center max-w-6xl mx-auto">
-        <span className="font-semibold text-lg">Your Wallet</span>
-        <span className="text-2xl font-bold">{walletBalance} KADI</span>
+      <div className="bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg mb-3 flex justify-between items-center max-w-2xl mx-auto">
+        <span className="font-semibold text-sm">Your Wallet</span>
+        <span className="text-xl font-bold">{walletBalance} KADI</span>
       </div>
 
       {/* Hand Cards */}
-      <div className="bg-gray-800/50 backdrop-blur p-8 rounded-xl shadow-xl border border-gray-700 max-w-6xl mx-auto">
-        <h2 className="text-xl font-bold mb-4 text-center">Your Hand ({cards.length} cards)</h2>
+      <div className="bg-green-900/20 backdrop-blur p-4 rounded-xl shadow-xl border border-yellow-600/30 max-w-4xl mx-auto">
+        <h2 className="text-lg font-bold mb-3 text-center">Your Hand ({cards.length} cards)</h2>
         
-        <div className="flex flex-wrap gap-3 justify-center mb-6 min-h-[180px]">
+        <div className="flex flex-wrap gap-2 justify-center mb-4 min-h-[140px]">
           {cards.length === 0 ? (
             <p className="text-gray-400 self-center">No cards in hand</p>
           ) : (
@@ -64,14 +64,14 @@ const Hand: React.FC<HandProps> = ({ cards, matchId, playerId, isMyTurn, walletB
         </div>
 
         {/* Action Buttons */}
-        <div className="flex gap-4 justify-center">
+        <div className="flex gap-3 justify-center">
           <button
             onClick={handleDrawCard}
             disabled={!isMyTurn}
             className={`
-              px-6 py-3 rounded-lg font-bold transition-all transform
+              px-5 py-2 rounded-lg font-bold transition-all transform text-sm
               ${isMyTurn 
-                ? 'bg-blue-600 hover:bg-blue-700 hover:scale-105 text-white shadow-lg' 
+                ? 'bg-yellow-600 hover:bg-yellow-700 hover:scale-105 text-white shadow-lg' 
                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
               }
             `}
@@ -83,9 +83,9 @@ const Hand: React.FC<HandProps> = ({ cards, matchId, playerId, isMyTurn, walletB
             onClick={handleDeclareNikoKadi}
             disabled={cards.length !== 1 || walletBalance < 10}
             className={`
-              px-6 py-3 rounded-lg font-bold transition-all transform
+              px-5 py-2 rounded-lg font-bold transition-all transform text-sm
               ${cards.length === 1 && walletBalance >= 10
-                ? 'bg-amber-600 hover:bg-amber-700 hover:scale-105 text-white shadow-lg' 
+                ? 'bg-orange-600 hover:bg-orange-700 hover:scale-105 text-white shadow-lg' 
                 : 'bg-gray-600 text-gray-400 cursor-not-allowed'
               }
             `}

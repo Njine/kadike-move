@@ -44,7 +44,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateMatch, onJoinMatch, isWaiting, ma
 
   if (isWaiting) {
     return (
-      <div className="bg-gray-800/50 backdrop-blur p-8 rounded-2xl shadow-2xl max-w-xl mx-auto border border-gray-700">
+      <div className="bg-green-900/20 backdrop-blur p-8 rounded-2xl shadow-2xl border border-yellow-600/30">
         <h2 className="text-2xl font-bold mb-6 text-center">Waiting Room</h2>
         <div className="text-center">
           <p className="text-xl mb-6">Waiting for players to join...</p>
@@ -59,7 +59,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateMatch, onJoinMatch, isWaiting, ma
   }
 
   return (
-    <div className="bg-gray-800/50 backdrop-blur p-8 rounded-2xl shadow-2xl max-w-xl mx-auto border border-gray-700">
+    <div className="bg-green-900/20 backdrop-blur p-8 rounded-2xl shadow-2xl border border-yellow-600/30">
       <h2 className="text-3xl font-bold mb-8 text-center">Enter the Game</h2>
       
       <div className="mb-8">
@@ -73,7 +73,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateMatch, onJoinMatch, isWaiting, ma
           value={playerName}
           onChange={(e) => setPlayerName(e.target.value)}
           placeholder="Enter your name"
-          className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          className="w-full px-4 py-3 bg-gray-900/70 border border-yellow-600/40 rounded-lg focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
         />
       </div>
 
@@ -101,7 +101,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateMatch, onJoinMatch, isWaiting, ma
         </button>
       </div>
 
-      <div className="p-6 bg-gray-900/30 rounded-xl border border-gray-700">
+      <div className="p-6 bg-green-900/10 rounded-xl border border-yellow-600/30">
         <h3 className="text-xl font-semibold mb-4">Join Existing Match</h3>
         <label htmlFor="joinMatchId" className="block text-sm font-medium mb-2 text-gray-300">
           Match ID
@@ -113,7 +113,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateMatch, onJoinMatch, isWaiting, ma
           value={joinMatchId}
           onChange={(e) => setJoinMatchId(e.target.value)}
           placeholder="Enter match ID"
-          className="w-full px-4 py-3 bg-gray-900/50 border border-gray-600 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent"
+          className="w-full px-4 py-3 bg-gray-900/70 border border-yellow-600/40 rounded-lg mb-4 focus:outline-none focus:ring-2 focus:ring-yellow-500 focus:border-transparent"
         />
         <button 
           onClick={handleJoinMatch}

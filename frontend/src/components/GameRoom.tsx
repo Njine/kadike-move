@@ -156,19 +156,18 @@ const GameRoom: React.FC<GameRoomProps> = ({
   }, [matchId, playerId, serverUrl]);
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white p-4">
-      <div className="max-w-4xl mx-auto">
-        <h1 className="text-4xl font-bold text-center mb-8">Kadike Move</h1>
+    <div className="w-full">
+      <div className="w-full">
 
         {/* Wallet Balance Display */}
         {match && playerId && (() => {
           const currentPlayer = match.players.find(p => p.id === playerId);
           return currentPlayer ? (
-            <div className="mb-6 p-4 bg-green-600 rounded-lg text-center">
-              <div className="text-sm text-green-100 mb-1">
+            <div className="mb-3 p-3 bg-green-600 rounded-lg text-center max-w-md mx-auto">
+              <div className="text-xs text-green-100">
                 Wallet Balance (KADI)
               </div>
-              <div className="text-3xl font-bold text-white">
+              <div className="text-2xl font-bold text-white">
                 {currentPlayer.walletBalance}
               </div>
               <div className="text-xs text-green-200 mt-2 italic">
