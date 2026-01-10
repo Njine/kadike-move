@@ -10,20 +10,20 @@ interface MatchBoardProps {
 
 const MatchBoard: React.FC<MatchBoardProps> = ({ match, currentPlayerId, myPlayerId }) => {
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full px-4">
       {/* Pool Display */}
-      <div className="bg-gradient-to-r from-amber-500 to-yellow-600 p-6 rounded-xl shadow-lg mb-6 text-center">
-        <h3 className="text-sm font-medium text-gray-900 mb-2">Prize Pool</h3>
-        <p className="text-4xl font-bold text-gray-900">{match.pool} KADI</p>
+      <div className="bg-gradient-to-r from-amber-500 to-yellow-600 p-8 rounded-2xl shadow-2xl mb-8 text-center max-w-3xl mx-auto">
+        <h3 className="text-lg font-medium text-gray-900 mb-3">Prize Pool</h3>
+        <p className="text-6xl font-bold text-gray-900">{match.pool} KADI</p>
         <p className="text-xs text-gray-800 mt-2">
           Entry: 100 KADI per player • Platform fee: 3.5% at settlement
         </p>
       </div>
 
       {/* Playing Area */}
-      <div className="bg-gradient-to-br from-green-800 to-green-900 rounded-3xl p-8 shadow-2xl border-8 border-green-950 relative">
+      <div className="bg-gradient-to-br from-green-800 to-green-900 rounded-3xl p-12 shadow-2xl border-8 border-green-950 relative max-w-7xl mx-auto">
         {/* Center Card Display */}
-        <div className="flex flex-col items-center justify-center min-h-[300px]">
+        <div className="flex flex-col items-center justify-center min-h-[400px]">
           <h3 className="text-lg font-semibold mb-4 text-green-100">Current Card</h3>
           {match.topDiscardCard ? (
             <div className="transform hover:scale-105 transition-transform">

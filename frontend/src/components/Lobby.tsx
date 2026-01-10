@@ -44,7 +44,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateMatch, onJoinMatch, isWaiting, ma
 
   if (isWaiting) {
     return (
-      <div className="bg-gray-800/50 backdrop-blur p-8 rounded-2xl shadow-2xl max-w-md mx-auto border border-gray-700">
+      <div className="bg-gray-800/50 backdrop-blur p-8 rounded-2xl shadow-2xl max-w-xl mx-auto border border-gray-700">
         <h2 className="text-2xl font-bold mb-6 text-center">Waiting Room</h2>
         <div className="text-center">
           <p className="text-xl mb-6">Waiting for players to join...</p>
@@ -59,7 +59,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateMatch, onJoinMatch, isWaiting, ma
   }
 
   return (
-    <div className="bg-gray-800/50 backdrop-blur p-8 rounded-2xl shadow-2xl max-w-md mx-auto border border-gray-700">
+    <div className="bg-gray-800/50 backdrop-blur p-8 rounded-2xl shadow-2xl max-w-xl mx-auto border border-gray-700">
       <h2 className="text-3xl font-bold mb-8 text-center">Enter the Game</h2>
       
       <div className="mb-8">

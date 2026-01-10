@@ -33,15 +33,15 @@ const Hand: React.FC<HandProps> = ({ cards, matchId, playerId, isMyTurn, walletB
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto mt-8">
+    <div className="w-full px-4 mt-8">
       {/* Wallet Balance */}
-      <div className="bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg mb-4 flex justify-between items-center">
-        <span className="font-semibold">Your Wallet</span>
-        <span className="text-xl font-bold">{walletBalance} KADI</span>
+      <div className="bg-green-600 text-white px-6 py-3 rounded-lg shadow-lg mb-4 flex justify-between items-center max-w-6xl mx-auto">
+        <span className="font-semibold text-lg">Your Wallet</span>
+        <span className="text-2xl font-bold">{walletBalance} KADI</span>
       </div>
 
       {/* Hand Cards */}
-      <div className="bg-gray-800/50 backdrop-blur p-6 rounded-xl shadow-xl border border-gray-700">
+      <div className="bg-gray-800/50 backdrop-blur p-8 rounded-xl shadow-xl border border-gray-700 max-w-6xl mx-auto">
         <h2 className="text-xl font-bold mb-4 text-center">Your Hand ({cards.length} cards)</h2>
         
         <div className="flex flex-wrap gap-3 justify-center mb-6 min-h-[180px]">

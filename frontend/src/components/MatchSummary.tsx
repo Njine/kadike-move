@@ -17,7 +17,7 @@ const MatchSummary: React.FC<MatchSummaryProps> = ({ winnerId, winnerName, pool,
   const winnerPayout = finalPool - platformFee;
   
   return (
-    <div className="w-full max-w-2xl mx-auto mt-8">
+    <div className="w-full max-w-4xl mx-auto mt-8 px-4">
       <div className={`
         p-8 rounded-2xl shadow-2xl text-center border-4
         ${isWinner 
