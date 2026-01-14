@@ -94,7 +94,7 @@ const Hand: React.FC<HandProps> = ({ cards, matchId, playerId, isMyTurn, walletB
                 ? `Need exactly 1 card (you have ${cards.length})` 
                 : walletBalance < 10 
                 ? 'Insufficient wallet balance (need 10 KADI)' 
-                : 'Optional: Costs 10 KADI from wallet'
+                : 'Required before winning! Costs 10 KADI from wallet'
             }
           >
             ⚡ Niko Kadi (10 KADI)
@@ -115,7 +115,7 @@ const Hand: React.FC<HandProps> = ({ cards, matchId, playerId, isMyTurn, walletB
           )}
           {cards.length === 1 && walletBalance >= 10 && (
             <p className="text-green-400">
-              ✓ Ready to declare Niko Kadi • Optional confidence move
+              ✓ Ready to declare Niko Kadi • Required before playing your last card!
             </p>
           )}
         </div>

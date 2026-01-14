@@ -124,7 +124,7 @@ const Lobby: React.FC<LobbyProps> = ({ onCreateMatch, onJoinMatch, isWaiting, ma
       </div>
       
       <p className="text-center text-sm text-gray-400 mt-6">
-        Match suit or rank to play • First to empty hand wins
+        Match suit or rank • One action per turn • Declare "Niko Kadi" before winning
       </p>
     </div>
   );

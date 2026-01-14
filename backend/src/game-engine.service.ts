@@ -15,8 +15,78 @@ const PLATFORM_FEE_BPS = 350; // 3.5% in basis points (covers gas sponsorship, i
 export class GameEngineService {
   private matches: Map<string, Match> = new Map();
   private moveHistories: Map<string, MoveHistory[]> = new Map();
+  // Track disconnect timers: matchId -> playerId -> timeout
+
+  private disconnectTimers: Map<string, Map<string, NodeJS.Timeout>> =
+    new Map();
+  private readonly DISCONNECT_GRACE_MS = 60_000; // 1 minute grace period
 
   constructor(private readonly blockchainService: BlockchainService) {}
+
+  /**
+   * Call when a player disconnects. Starts grace timer.
+   */
+  handlePlayerDisconnect(matchId: string, playerId: string) {
+    const match = this.matches.get(matchId);
+    if (!match) return;
+    const player = match.players.find((p) => p.id === playerId);
+    if (!player || !player.isConnected) return;
+    player.isConnected = false;
+    if (!this.disconnectTimers.has(matchId)) {
+      this.disconnectTimers.set(matchId, new Map());
+    }
+    const timers = this.disconnectTimers.get(matchId)!;
+    if (timers.has(playerId)) clearTimeout(timers.get(playerId));
+    timers.set(
+      playerId,
+      setTimeout(() => {
+        this.forfeitPlayer(matchId, playerId);
+      }, this.DISCONNECT_GRACE_MS),
+    );
+  }
+
+  /**
+   * Call when a player reconnects. Cancels grace timer.
+   */
+  handlePlayerReconnect(matchId: string, playerId: string) {
+    const match = this.matches.get(matchId);
+    if (!match) return;
+    const player = match.players.find((p) => p.id === playerId);
+    if (!player) return;
+    player.isConnected = true;
+    const timers = this.disconnectTimers.get(matchId);
+    if (timers && timers.has(playerId)) {
+      clearTimeout(timers.get(playerId));
+      timers.delete(playerId);
+    }
+  }
+
+  /**
+   * Forfeit a player after grace period. Remove stake, mark as forfeited.
+   */
+  private forfeitPlayer(matchId: string, playerId: string) {
+    const match = this.matches.get(matchId);
+    if (!match) return;
+    const player = match.players.find((p) => p.id === playerId);
+    if (!player || player.hand.length === 0) return; // Already out
+    player.isConnected = false;
+    player.hand = [];
+    // Entry stake remains in pool (per KADI rules: forfeit = stake lost to winner)
+    // Optionally, record forfeit in move history
+    // Use 'draw' as a neutral action for forfeit, since 'forfeit' is not a valid MoveHistory.action
+    this.recordMove(matchId, playerId, 'draw');
+    // Remove disconnect timer
+    const timers = this.disconnectTimers.get(matchId);
+    if (timers) timers.delete(playerId);
+    // If fewer than 2 players remain, end match
+    const activePlayers = match.players.filter(
+      (p) => p.hand.length > 0 && p.isConnected,
+    );
+    if (activePlayers.length < 2 && match.isActive) {
+      match.isActive = false;
+      match.winnerId = undefined;
+    }
+  }
 
   /**
    * Create a new match with the specified player IDs.
@@ -35,8 +105,8 @@ export class GameEngineService {
       id: playerId,
       name: `Player ${playerId}`,
       hand: [],
-      stake: MATCH_ENTRY_STAKE, // Entry stake (locked, never modified)
-      walletBalance: 1000, // Mock wallet balance for MVP (TODO: fetch from blockchain/user service)
+      stake: MATCH_ENTRY_STAKE,
+      walletBalance: 1000,
       nikoKadiDeclared: false,
       isConnected: true,
     }));
@@ -53,7 +123,7 @@ export class GameEngineService {
       discardPile: [],
       topDiscardCard: null,
       turnIndex: 0,
-      pool: players.length * MATCH_ENTRY_STAKE, // Base pool from entry stakes
+      pool: players.length * MATCH_ENTRY_STAKE,
       isActive: false,
       winnerId: undefined,
     };
@@ -75,9 +145,9 @@ export class GameEngineService {
       throw new Error('Match has already started');
     }
 
-    // Deal 7 cards to each player
+    // Deal 4 cards to each player (KADI rules)
     for (const player of match.players) {
-      for (let i = 0; i < 7; i++) {
+      for (let i = 0; i < 4; i++) {
         if (match.drawDeck.length === 0) {
           throw new Error('Not enough cards in deck to deal hands');
         }
@@ -133,7 +203,7 @@ export class GameEngineService {
       );
     }
 
-    // Validate card legality (must match suit OR rank)
+    // Validate card legality (must match suit OR rank only)
     if (match.topDiscardCard) {
       const isLegal =
         card.suit === match.topDiscardCard.suit ||
@@ -155,6 +225,24 @@ export class GameEngineService {
 
     // Check win condition
     if (currentPlayer.hand.length === 0) {
+      // Niko Kadi enforcement: must have declared when at 1 card
+      if (!currentPlayer.nikoKadiDeclared) {
+        // Invalidate win, apply penalty: draw 2 cards, reset Niko Kadi
+        for (let i = 0; i < 2; i++) {
+          if (match.drawDeck.length === 0) this.reshuffleDiscard(matchId);
+          if (match.drawDeck.length > 0) {
+            const penaltyCard = match.drawDeck.pop()!;
+            currentPlayer.hand.push(penaltyCard);
+          }
+        }
+        currentPlayer.nikoKadiDeclared = false;
+        // Optionally, record penalty in move history
+        this.recordMove(matchId, playerId, 'draw');
+        this.recordMove(matchId, playerId, 'draw');
+        // Advance turn as normal
+        match.turnIndex = (match.turnIndex + 1) % match.players.length;
+        return match;
+      }
       match.isActive = false;
       match.winnerId = playerId;
 
@@ -224,7 +312,7 @@ export class GameEngineService {
     // Record move in history
     this.recordMove(matchId, playerId, 'draw', card);
 
-    // Advance turn - player's turn ends after drawing
+    // After drawing, turn always advances. Drawing does NOT force a play.
     match.turnIndex = (match.turnIndex + 1) % match.players.length;
 
     return match;
